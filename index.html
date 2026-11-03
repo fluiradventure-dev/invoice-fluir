@@ -126,6 +126,10 @@
         <div>
           <span class="label">Status Pembayaran</span>
           <div id="status-buttons" class="grid grid-cols-3 gap-2"></div>
+          <label class="flex items-center gap-2 mt-3 text-sm font-medium text-slate-700">
+            <input type="checkbox" data-k="doc.hideStamp" class="h-4 w-4 accent-[#14286B]" />
+            Sembunyikan stempel (LUNAS hijau / BELUM LUNAS merah)
+          </label>
         </div>
       </section>
 
@@ -644,6 +648,9 @@
 
       const logo = `<img src="${a.logo || DEFAULT_LOGO}" alt="Logo ${esc(co.brand)}" class="h-16 max-w-[170px] object-contain" />`;
 
+      // Kolom Diskon hanya ditampilkan jika ada item yang memakai diskon
+      const showDisc = c.items.some(r => r.disc > 0);
+
       const itemRows = d.items.length
         ? d.items.map((it, i) => {
             const r = c.items[i];
@@ -656,11 +663,11 @@
                 </td>
                 <td class="py-2 px-2 align-top text-center">${toNum(it.qty)}</td>
                 <td class="py-2 px-2 align-top text-right whitespace-nowrap">${rp(toNum(it.price))}</td>
-                <td class="py-2 px-2 align-top text-right whitespace-nowrap">${r.disc > 0 ? '- ' + rp(r.disc) : '-'}</td>
+                ${showDisc ? `<td class="py-2 px-2 align-top text-right whitespace-nowrap">${r.disc > 0 ? '- ' + rp(r.disc) : '-'}</td>` : ''}
                 <td class="py-2 px-2 align-top text-right whitespace-nowrap font-semibold">${rp(r.total)}</td>
               </tr>`;
           }).join('')
-        : `<tr><td colspan="6" class="py-6 text-center text-slate-400">Belum ada item kegiatan</td></tr>`;
+        : `<tr><td colspan="${showDisc ? 6 : 5}" class="py-6 text-center text-slate-400">Belum ada item kegiatan</td></tr>`;
 
       const sumRow = (label, value, extraCls = '') => `
         <tr class="${extraCls}">
@@ -675,7 +682,20 @@
       sum += sumRow('<b class="text-slate-900">Total Bersih</b>', `<b class="text-navy">${rp(c.total)}</b>`, 'border-t-2 border-slate-300');
       sum += sumRow(`Down Payment (DP)${c.dpPercent ? ` · ${c.dpPercent}%` : ''}`, '- ' + rp(c.dp));
       if (c.isLunas) sum += sumRow('Pelunasan', rp(c.pelunasan));
-      sum += sumRow('<b class="text-slate-900">Sisa Pembayaran</b>', `<b class="text-navy">${rp(c.sisa)}</b>`, 'border-t border-slate-300 bg-navy-light');
+      if (d.status === 'DP') {
+        // Saat status DP, baris terakhir menampilkan jumlah yang dibayarkan (nominal DP)
+        sum += sumRow('<b class="text-slate-900">Jumlah yang Dibayarkan</b>', `<b class="text-navy">${rp(c.dp)}</b>`, 'border-t border-slate-300 bg-navy-light');
+      } else {
+        sum += sumRow('<b class="text-slate-900">Sisa Pembayaran</b>', `<b class="text-navy">${rp(c.sisa)}</b>`, 'border-t border-slate-300 bg-navy-light');
+      }
+
+      // Stempel: hijau LUNAS jika lunas, merah BELUM LUNAS jika belum
+      let stamp = '';
+      if (!d.hideStamp) {
+        const color = c.isLunas ? '#059669' : '#dc2626';
+        const text = c.isLunas ? 'LUNAS' : 'BELUM LUNAS';
+        stamp = `<div style="color:${color};border:3px solid ${color};transform:rotate(-8deg);" class="inline-block rounded-md px-4 py-1.5 text-center text-lg font-extrabold tracking-[0.18em] whitespace-nowrap">${text}</div>`;
+      }
 
       const notes = d.notes
         .filter(n => n && n.trim())
@@ -731,14 +751,15 @@
               <th>Deskripsi</th>
               <th class="w-16 text-center">Qty (Pax)</th>
               <th class="text-right">Harga</th>
-              <th class="text-right">Diskon</th>
+              ${showDisc ? '<th class="text-right">Diskon</th>' : ''}
               <th class="text-right">Jumlah</th>
             </tr>
           </thead>
           <tbody>${itemRows}</tbody>
         </table>
 
-        <div class="flex justify-end mt-4">
+        <div class="flex justify-between items-start gap-4 mt-4">
+          <div class="pt-4 pl-2">${stamp}</div>
           <div class="w-[62%]">
             <table class="text-xs">${sum}</table>
           </div>
