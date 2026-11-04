@@ -1,6 +1,6 @@
 /* Service worker: membuat Invoice Generator tetap bisa dibuka saat sinyal lemah atau offline.
    Ubah CACHE_VERSION setiap kali index.html diperbarui agar pengguna mendapat versi terbaru. */
-const CACHE_VERSION = 'fluir-invoice-v4';
+const CACHE_VERSION = 'fluir-invoice-v5';
 const APP_SHELL = [
   './',
   './index.html',
